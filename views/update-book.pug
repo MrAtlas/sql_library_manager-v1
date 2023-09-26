@@ -1,9 +1,10 @@
-extends layout 
+extends layout
 
-block content 
+block content
   h1 Update Book
 
-  include form-error
+  if (errors) 
+    include form-error
   
   form(action=`/books/${book.id}`, method="post")
     p

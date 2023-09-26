@@ -70,30 +70,27 @@ app.get('/books/:id', async (req, res, next) => {
 });
 
 // Updates book info
-app.post('/books/:id', async (req, res, next) => {
+app.get('/books/:id', async (req, res) => {
+  const book = await Book.findByPk(req.params.id);
+  res.render('update-book', { book, title: 'Update Book' })
+});
+
+app.post('/books/:id', async (req, res) => {
+  let book;
   try {
-    const book = await Book.findByPk(req.params.id);
-    if (!book) {
-      return next(createError(404, 'Book not found'));
-    }
-
-    const { title, author, genre, year } = req.body;
-    book.title = title;
-    book.author = author;
-    book.genre = genre;
-    book.year = year;
-    await book.save();
-
-    res.render('update-book', { book });
-  } catch (err) {
-    if (err.name === 'SequelizeValidationError') {
-      const errors = err.errors.map(error => error.message);
-      res.render('update-book', { errors });
+    book = await Book.findByPk(req.params.id);
+    await book.update(req.body);
+    res.redirect('/books/');
+  } catch (error) {
+    if (error.name === 'SequelizeValidationError') {
+      book = await Book.findByPk(req.params.id);
+      res.render('update-book', { book, errors: error.errors, title: "Update Book" });
     } else {
-      next(err);
+      throw error;
     }
   }
-});
+  
+})
 
 // Delete book
 app.post('/books/:id/delete', async (req, res, next) => {
@@ -112,24 +109,17 @@ app.post('/books/:id/delete', async (req, res, next) => {
 
 
 // 404 error handler
-app.use((req, res, next) => {
-  const err = new Error('Page Not Found');
-  err.status = 404;
-  next(err);
+app.use(function (req, res, next) {
+  next(createError(404));
 });
 
 // Global error handler
-app.use((err, req, res, next) => {
-  err.status = err.status || 500;
-  console.error(`Error ${err.status}: ${err.message}`);
+app.use(function (err, req, res, next) {
+  res.locals.message = err.message;
+  res.locals.error = req.app.get('env') === 'development' ? err : {};
 
-  res.status(err.status);
-
-  if (err.status === 404) {
-    res.render('page-not-found', { error: err });
-  } else {
-    res.render('error', { err });
-  }
+  res.status(err.status || 500);
+  res.render('error');
 });
 
 sequelize
