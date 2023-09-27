@@ -45,12 +45,12 @@ app.post('/books/new', async (req, res, next) => {
     const { title, author, genre, year } = req.body;
     await Book.create({ title, author, genre, year });
     res.redirect('/books');
-  } catch (err) {
-    if (err.name === 'SequelizeValidationError') {
-      const errors = err.errors.map(error => error.message);
-      res.render('new-book', { errors });
+  } catch (error) {
+    if (error.name === 'SequelizeValidationError') {
+      const errors = error.errors.map(error => error.message);
+      res.render('new-book', { errors: error.errors, title: "Update Book" });
     } else {
-      next(err);
+      next(error);
     }
   }
 });
@@ -110,7 +110,7 @@ app.post('/books/:id/delete', async (req, res, next) => {
 
 // 404 error handler
 app.use(function (req, res, next) {
-  next(createError(404));
+  res.status(404).render('page-not-found');
 });
 
 // Global error handler
